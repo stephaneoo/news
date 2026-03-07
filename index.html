@@ -433,20 +433,25 @@ async function fetchStations() {
     ];
     const fetches = queries.map(q =>
       fetch('https://de1.api.radio-browser.info/json/stations/search?' + new URLSearchParams({
-        ...q, limit: '10', order: 'votes', reverse: 'true', hidebroken: 'true',
+        ...q, limit: '30', order: 'votes', reverse: 'true', hidebroken: 'true',
       })).then(r => r.json()).catch(() => [])
     );
     const results = await Promise.all(fetches);
-    const seen = new Set();
-    const data = results.flat().filter(s => {
-      if (!s.url_resolved || seen.has(s.url_resolved)) return false;
-      seen.add(s.url_resolved);
-      return true;
-    });
+    const seenUrl = new Set();
+    const seenName = new Set();
     const musicWords = /music|rock|pop|jazz|classic|hip.?hop|country|soul|reggae|metal|blues|hits|oldies|dance|edm|techno|folk|rnb|r&b|latino|schlager/i;
-    const stations = data
-      .filter(s => !s.url_resolved.includes('.m3u8') && !s.url_resolved.includes('.pls'))
-      .filter(s => !musicWords.test(s.tags || '') && !musicWords.test(s.name || ''))
+    const stations = results.flat()
+      .filter(s => {
+        if (!s.url_resolved) return false;
+        if (s.url_resolved.includes('.m3u8') || s.url_resolved.includes('.pls')) return false;
+        if (musicWords.test(s.tags || '') || musicWords.test(s.name || '')) return false;
+        const url = s.url_resolved;
+        const name = s.name.trim().toLowerCase();
+        if (seenUrl.has(url) || seenName.has(name)) return false;
+        seenUrl.add(url);
+        seenName.add(name);
+        return true;
+      })
       .slice(0, 48)
       .map((s, i) => ({
         name: s.name.trim().replace(/\s+/g, '\n').slice(0, 18),
