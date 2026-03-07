@@ -411,10 +411,6 @@ h1 {
       <div class="knob-label">Chaos</div>
       <div class="knob" id="knob-chaos"><div class="knob-dot"></div></div>
     </div>
-    <div class="knob-wrap">
-      <div class="knob-label">Distance</div>
-      <div class="knob" id="knob-distance"><div class="knob-dot"></div></div>
-    </div>
   </div>
 </div>
 <div id="bottom">
@@ -678,94 +674,23 @@ function cutupStep() {
 }
 
 // ── Audio ─────────────────────────────────────────────────────────────────────
-let audioCtx, masterFilter, masterGain, noiseGain, noiseSource;
-let distance = 0;
-
-function initAudioContext() {
-  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-
-  // master bandpass filter — sweeps with distance
-  masterFilter = audioCtx.createBiquadFilter();
-  masterFilter.type = 'bandpass';
-  masterFilter.frequency.value = 20000;
-  masterFilter.Q.value = 0.5;
-
-  // master gain
-  masterGain = audioCtx.createGain();
-  masterGain.gain.value = 1;
-
-  masterFilter.connect(masterGain);
-  masterGain.connect(audioCtx.destination);
-
-  // static noise layer
-  const bufSize = audioCtx.sampleRate * 2;
-  const noiseBuf = audioCtx.createBuffer(1, bufSize, audioCtx.sampleRate);
-  const data = noiseBuf.getChannelData(0);
-  for (let i = 0; i < bufSize; i++) data[i] = (Math.random() * 2 - 1) * 0.3;
-
-  noiseSource = audioCtx.createBufferSource();
-  noiseSource.buffer = noiseBuf;
-  noiseSource.loop = true;
-
-  // noise filter — crackly hi-passed
-  const noiseFilter = audioCtx.createBiquadFilter();
-  noiseFilter.type = 'highpass';
-  noiseFilter.frequency.value = 3000;
-
-  noiseGain = audioCtx.createGain();
-  noiseGain.gain.value = 0;
-
-  noiseSource.connect(noiseFilter);
-  noiseFilter.connect(noiseGain);
-  noiseGain.connect(audioCtx.destination);
-  noiseSource.start();
-}
-
-function updateDistance() {
-  if (!audioCtx) return;
-  // bandpass: 20000Hz (clean) → 800Hz (tinny AM) as distance increases
-  const freq = 20000 - distance * 19200;
-  // Q: 0.5 (wide) → 8 (narrow) as distance increases
-  const q = 0.5 + distance * 7.5;
-  masterFilter.frequency.value = freq;
-  masterFilter.Q.value = q;
-  // static noise volume
-  noiseGain.gain.value = distance * 0.15;
-}
-
 function applyGain(ch) {
+  if (!ch.audio) return;
   const vol = Math.max(0, Math.min(1, ch.dispGain * masterVol));
-  if (ch.gainNode) {
-    ch.gainNode.gain.value = vol;
-  } else if (ch.audio) {
-    ch.audio.volume = vol;
-  }
-  if (ch.audio) ch.audio.muted = vol === 0;
+  ch.audio.volume = vol;
+  ch.audio.muted = vol === 0;
 }
 
 async function startAudio() {
   const statusEl = document.getElementById('status');
   let loaded = 0;
 
-  initAudioContext();
-
   for (let i = 0; i < N; i++) {
     const ch = channels[i];
     const el = new Audio();
     el.src = ch.station.url;
-
     ch.audio = el;
-    try {
-      const source = audioCtx.createMediaElementSource(el);
-      const gain = audioCtx.createGain();
-      gain.gain.value = ch.baseGain * masterVol;
-      source.connect(gain);
-      gain.connect(masterFilter);
-      ch.gainNode = gain;
-    } catch(e) {
-      // fallback: no Web Audio processing for this channel
-      el.volume = ch.baseGain * masterVol;
-    }
+    el.volume = ch.baseGain * masterVol;
 
     el.addEventListener('canplay', () => {
       loaded++;
@@ -881,7 +806,6 @@ function makeKnob(id, initVal, onChange) {
 }
 
 makeKnob('knob-chaos', 0.0, v => { chaos = v; });
-makeKnob('knob-distance', 0.0, v => { distance = v; updateDistance(); });
 
 // ── Buttons ───────────────────────────────────────────────────────────────────
 const btnPlay = document.getElementById('btn-play');
