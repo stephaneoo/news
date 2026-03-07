@@ -564,8 +564,9 @@ function makeChannelEl(parent, station, initGain) {
   nameEl.addEventListener('click', e => {
     e.stopPropagation();
     if (ch.soloed) {
-      // unsolo: restore all channels, but soloed fader stays at full & frozen
+      // unsolo: restore all channels, unfreeze so automation resumes
       ch.soloed = false;
+      ch.frozen = false;
       nameEl.style.color = '';
       channels.forEach(c => { c.muted = false; c.col.style.opacity = ''; applyGain(c); });
     } else {
