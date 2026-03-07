@@ -889,11 +889,6 @@ async function autostart() {
   await startAudio();
   if (cutupMode) enterCutup();
 }
-document.addEventListener('click', e => {
-  if (e.target.closest('#btn-mode, #btn-rnd, #btn-day')) return;
-  autostart();
-}, { once: true });
-document.addEventListener('keydown', autostart, { once: true });
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 (async function init() {
