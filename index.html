@@ -28,8 +28,8 @@ body.day {
   --bg2:        #e8e2da;
   --bg3:        #ddd7ce;
   --text:       #444;
-  --text-dim:   #888;
-  --text-mid:   #777;
+  --text-dim:   #777;
+  --text-mid:   #666;
   --border:     #b8b0a6;
   --border-dim: #d0c8be;
   --handle:     #d8d0c6;
@@ -72,7 +72,7 @@ h1 {
 
 #mixer .sep {
   width: 1px;
-  height: 180px;
+  height: 220px;
   background: var(--border-dim);
   margin: 0 6px;
   align-self: center;
@@ -96,7 +96,7 @@ h1 {
 
 .vu {
   width: 3px;
-  height: 180px;
+  height: 220px;
   background: var(--bg2);
   border-radius: 2px;
   position: relative;
@@ -112,7 +112,7 @@ h1 {
 
 .fader-track {
   width: 4px;
-  height: 180px;
+  height: 220px;
   background: var(--bg3);
   border-radius: 2px;
   position: relative;
@@ -173,7 +173,7 @@ h1 {
   flex-direction: column;
   align-items: center;
   justify-content: space-evenly;
-  height: 220px;
+  height: 260px;
   gap: 0;
 }
 
@@ -265,7 +265,7 @@ h1 {
 /* Night toggle — discreet corner */
 #btn-day {
   position: fixed;
-  bottom: 12px;
+  bottom: 36px;
   left: 50%;
   transform: translateX(-50%);
   font-size: 38px;
@@ -353,8 +353,8 @@ h1 {
     max-width: 48px;
   }
 
-  .vu, .fader-track { height: 130px; }
-  #mixer .sep { height: 130px; margin: 0 3px; }
+  .vu, .fader-track { height: 140px; }
+  #mixer .sep { height: 140px; margin: 0 3px; }
 
   .fader-handle { width: 26px; height: 12px; }
   .master .fader-handle { width: 34px; }
@@ -369,7 +369,7 @@ h1 {
 
   #right-panel {
     flex-direction: row;
-    height: auto;
+    height: 60px;
     gap: 32px;
   }
 
@@ -485,7 +485,7 @@ function poolSlice(pool) {
 
 const N = 8;
 const isMobile = window.matchMedia('(max-width: 600px)').matches;
-const TRACK_H = isMobile ? 120 : 180, HANDLE_H = isMobile ? 11 : 13;
+const TRACK_H = isMobile ? 140 : 220, HANDLE_H = isMobile ? 11 : 13;
 
 let driftAmount = 1.0, masterVol = 0.8;
 
@@ -889,7 +889,10 @@ async function autostart() {
   await startAudio();
   if (cutupMode) enterCutup();
 }
-document.addEventListener('click',   autostart, { once: true });
+document.addEventListener('click', e => {
+  if (e.target.closest('#btn-mode, #btn-rnd, #btn-day')) return;
+  autostart();
+}, { once: true });
 document.addEventListener('keydown', autostart, { once: true });
 
 // ── Init ──────────────────────────────────────────────────────────────────────
