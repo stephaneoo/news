@@ -407,9 +407,7 @@ h1 {
 <div id="main">
   <div id="mixer"></div>
   <div id="right-panel">
-    <div class="knob-wrap" id="depth-wrap">
-      <div class="knob-label">Depth</div>
-      <div class="knob" id="knob-drift"><div class="knob-dot"></div></div>
+    <div class="knob-wrap" id="depth-wrap" style="display:none">
     </div>
     <div class="knob-wrap" id="speed-wrap">
       <div class="knob-label">Speed</div>
@@ -791,7 +789,6 @@ function makeKnob(id, initVal, onChange) {
   document.addEventListener('touchend', () => { dragging = false; });
 }
 
-makeKnob('knob-drift', 1.0, v => { driftAmount = v; });
 makeKnob('knob-speed', 0.0, v => { lfoSpeedMult = 0.003 + v * 0.997; });
 
 // ── Buttons ───────────────────────────────────────────────────────────────────
