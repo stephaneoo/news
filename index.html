@@ -668,9 +668,6 @@ function cutupStep() {
   channels.forEach((ch, i) => {
     if (i === next) {
       ch.cutTarget = 1.0;
-      ch.dispGain = 1.0;
-      ch.baseGain = 1.0;
-      applyGain(ch); updateFader(ch);
     } else {
       ch.cutTarget = 0.0;
     }
@@ -724,10 +721,12 @@ function tick() {
     channels.forEach(ch => {
       if (ch.cutTarget !== undefined) {
         const diff = ch.cutTarget - ch.dispGain;
-        if (Math.abs(diff) < fadeSpeed) {
+        // ramp up fast (~3-4 frames), fade out slower
+        const speed = diff > 0 ? 0.3 : fadeSpeed;
+        if (Math.abs(diff) < speed) {
           ch.dispGain = ch.cutTarget;
         } else {
-          ch.dispGain += Math.sign(diff) * fadeSpeed;
+          ch.dispGain += Math.sign(diff) * speed;
         }
         ch.baseGain = ch.dispGain;
         applyGain(ch); updateFader(ch);
