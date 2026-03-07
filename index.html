@@ -310,55 +310,77 @@ h1 {
 @media (max-width: 600px) {
   body {
     justify-content: flex-start;
-    padding-top: 24px;
+    padding-top: 20px;
+    padding-bottom: 50px;
     overflow-y: auto;
   }
 
   h1 {
-    font-size: 12px;
-    letter-spacing: 6px;
-    margin-bottom: 20px;
+    font-size: 11px;
+    letter-spacing: 5px;
+    margin-bottom: 16px;
   }
 
   #main {
     flex-direction: column;
-    gap: 20px;
+    gap: 16px;
+    width: 100%;
+    padding: 0 8px;
   }
 
   #mixer {
-    gap: 6px;
+    gap: 0;
+    justify-content: center;
+    width: 100%;
   }
 
-  .channel { width: 32px; }
-  .channel.master { width: 42px; }
+  .channel {
+    width: calc((100vw - 60px) / 9);
+    min-width: 28px;
+    max-width: 40px;
+  }
+  .channel.master {
+    width: calc((100vw - 60px) / 9 + 8px);
+    min-width: 34px;
+    max-width: 48px;
+  }
 
-  .vu, .fader-track { height: 120px; }
-  #mixer .sep { height: 120px; }
+  .vu, .fader-track { height: 130px; }
+  #mixer .sep { height: 130px; margin: 0 3px; }
 
-  .fader-handle { width: 28px; height: 11px; }
-  .master .fader-handle { width: 36px; }
+  .fader-handle { width: 26px; height: 12px; }
+  .master .fader-handle { width: 34px; }
 
-  .channel-name { font-size: 7px; height: 20px; letter-spacing: 0; }
+  .channel-name {
+    font-size: 6px;
+    height: 22px;
+    letter-spacing: 0;
+    word-break: break-all;
+    overflow: hidden;
+  }
 
   #right-panel {
     flex-direction: row;
     height: auto;
-    gap: 28px;
+    gap: 32px;
   }
 
   #bottom {
-    margin-top: 20px;
-    gap: 16px;
+    margin-top: 16px;
+    gap: 18px;
   }
 
-  .knob { width: 44px; height: 44px; }
-  .knob-dot { transform-origin: 50% 18px; top: 5px; }
+  .knob { width: 48px; height: 48px; }
+  .knob-dot { transform-origin: 50% 20px; top: 5px; height: 10px; }
+  .knob-label { font-size: 9px; }
 
+  .btn { padding: 12px 20px; }
   #btn-rnd { font-size: 40px; }
-  #btn-play { font-size: 24px; min-width: 56px; }
+  #btn-play { font-size: 24px; min-width: 56px; padding: 10px 22px; }
+  #btn-mode { font-size: 11px; }
 
-  #status { bottom: 10px; }
-  #btn-day { bottom: 8px; right: 12px; }
+  #status { bottom: 10px; font-size: 9px; }
+  #btn-day { bottom: 8px; right: 10px; }
 }
 </style>
 </head>
@@ -399,18 +421,22 @@ async function fetchStations() {
   statusEl.textContent = 'fetching stations…';
   try {
     const queries = [
-      { tag: 'news',        language: 'english' },
-      { tag: 'talk',        language: 'english' },
+      { tag: 'news',        language: 'english', countrycode: 'US' },
       { tag: 'news',        countrycode: 'GB' },
       { tag: 'news',        countrycode: 'AU' },
-      { tag: 'information', language: 'french' },
+      { tag: 'news',        language: 'french' },
       { tag: 'news',        language: 'spanish' },
+      { tag: 'news',        language: 'german' },
       { tag: 'news',        language: 'arabic' },
       { tag: 'news',        language: 'japanese' },
+      { tag: 'news',        language: 'korean' },
+      { tag: 'news',        language: 'hindi' },
+      { tag: 'news',        language: 'portuguese' },
+      { tag: 'news',        language: 'russian' },
     ];
     const fetches = queries.map(q =>
       fetch('https://de1.api.radio-browser.info/json/stations/search?' + new URLSearchParams({
-        ...q, limit: '15', order: 'votes', reverse: 'true', hidebroken: 'true',
+        ...q, limit: '10', order: 'votes', reverse: 'true', hidebroken: 'true',
       })).then(r => r.json()).catch(() => [])
     );
     const results = await Promise.all(fetches);
@@ -420,8 +446,10 @@ async function fetchStations() {
       seen.add(s.url_resolved);
       return true;
     });
+    const musicWords = /music|rock|pop|jazz|classic|hip.?hop|country|soul|reggae|metal|blues|hits|oldies|dance|edm|techno|folk|rnb|r&b|latino|schlager/i;
     const stations = data
       .filter(s => !s.url_resolved.includes('.m3u8') && !s.url_resolved.includes('.pls'))
+      .filter(s => !musicWords.test(s.tags || '') && !musicWords.test(s.name || ''))
       .slice(0, 48)
       .map((s, i) => ({
         name: s.name.trim().replace(/\s+/g, '\n').slice(0, 18),
