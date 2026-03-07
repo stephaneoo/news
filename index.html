@@ -265,16 +265,15 @@ h1 {
 /* Night toggle — discreet corner */
 #btn-day {
   position: fixed;
-  bottom: 14px;
+  bottom: 12px;
   left: 50%;
   transform: translateX(-50%);
-  font-size: 28px;
+  font-size: 38px;
   padding: 4px 8px;
   letter-spacing: 0;
   border: none;
-  opacity: 0.35;
-  filter: grayscale(1);
-  transition: opacity 0.3s, filter 0.2s;
+  opacity: 0.4;
+  transition: opacity 0.3s;
 }
 #btn-day:hover { opacity: 0.8; }
 
@@ -403,7 +402,7 @@ h1 {
       <div class="knob-label">Depth</div>
       <div class="knob" id="knob-drift"><div class="knob-dot"></div></div>
     </div>
-    <div class="knob-wrap">
+    <div class="knob-wrap" id="speed-wrap">
       <div class="knob-label">Speed</div>
       <div class="knob" id="knob-speed"><div class="knob-dot"></div></div>
     </div>
@@ -801,6 +800,7 @@ const btnRnd  = document.getElementById('btn-rnd');
 const btnDay  = document.getElementById('btn-day');
 const btnMode = document.getElementById('btn-mode');
 const depthWrap = document.getElementById('depth-wrap');
+const speedWrap = document.getElementById('speed-wrap');
 
 // modes: 'smooth', 'cut', 'manual'
 let mode = 'smooth';
@@ -810,14 +810,17 @@ function applyModeUI() {
   if (mode === 'cut') {
     btnMode.textContent = '[ cut ]';
     depthWrap.style.visibility = 'hidden';
+    speedWrap.style.visibility = 'visible';
     cutupMode = true; autoMode = false;
   } else if (mode === 'manual') {
     btnMode.textContent = '[ manual ]';
     depthWrap.style.visibility = 'hidden';
+    speedWrap.style.visibility = 'hidden';
     cutupMode = false; autoMode = false;
   } else {
     btnMode.textContent = '[ smooth ]';
     depthWrap.style.visibility = 'visible';
+    speedWrap.style.visibility = 'visible';
     cutupMode = false; autoMode = true;
     channels.forEach(ch => {
       ch.autoTarget = Math.max(0, Math.min(1, ch.baseGain + (Math.random() - 0.5) * 0.5));
