@@ -812,11 +812,6 @@ function applyModeUI() {
     depthWrap.style.visibility = 'hidden';
     speedWrap.style.visibility = 'visible';
     cutupMode = true; autoMode = false;
-  } else if (mode === 'manual') {
-    btnMode.textContent = '[ manual ]';
-    depthWrap.style.visibility = 'hidden';
-    speedWrap.style.visibility = 'hidden';
-    cutupMode = false; autoMode = false;
   } else {
     btnMode.textContent = '[ smooth ]';
     depthWrap.style.visibility = 'visible';
@@ -856,12 +851,12 @@ btnRnd.addEventListener('click', () => {
 });
 
 btnMode.addEventListener('click', () => {
-  const modes = ['smooth', 'cut', 'manual'];
+  const modes = ['smooth', 'cut'];
   mode = modes[(modes.indexOf(mode) + 1) % modes.length];
   if (mode === 'cut') {
     lfoSpeedMult = 0.6;
     if (started) enterCutup();
-  } else if (mode === 'smooth') {
+  } else {
     channels.forEach(ch => {
       ch.baseGain = 0.5; ch.dispGain = 0.5;
       applyGain(ch); updateFader(ch);
