@@ -268,7 +268,7 @@ h1 {
 
 /* ── Mode toggle ── */
 #btn-mode { letter-spacing: 1px; font-size: 11px; }
-#mode-smooth, #mode-cut { transition: color 0.2s, opacity 0.2s; }
+#mode-drift, #mode-zap { transition: color 0.2s, opacity 0.2s; }
 .mode-on { color: var(--accent); opacity: 1; }
 .mode-off { opacity: 0.35; }
 
@@ -418,7 +418,7 @@ h1 {
 <div id="bottom">
   <button class="btn" id="btn-play">▶</button>
   <button class="btn" id="btn-rnd" title="randomize stations">🎲</button>
-  <button class="btn" id="btn-mode"><span id="mode-smooth">smooth</span> · <span id="mode-cut">cut</span></button>
+  <button class="btn" id="btn-mode"><span id="mode-drift">drift</span> · <span id="mode-zap">zap</span></button>
 </div>
 <button class="btn" id="btn-day">☽</button>
 <div id="status">click anywhere to start</div>
@@ -823,8 +823,8 @@ const speedWrap = document.getElementById('speed-wrap');
 // modes: 'smooth', 'cut', 'manual'
 let mode = 'smooth';
 
-const modeSmooth = document.getElementById('mode-smooth');
-const modeCut = document.getElementById('mode-cut');
+const modeSmooth = document.getElementById('mode-drift');
+const modeCut = document.getElementById('mode-zap');
 
 function applyModeUI() {
   btnMode.classList.add('active');
