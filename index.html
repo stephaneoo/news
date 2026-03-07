@@ -564,7 +564,7 @@ function makeChannelEl(parent, station, initGain) {
   nameEl.addEventListener('click', e => {
     e.stopPropagation();
     if (ch.soloed) {
-      // unsolo: restore all channels
+      // unsolo: restore all channels, but soloed fader stays at full & frozen
       ch.soloed = false;
       nameEl.style.color = '';
       channels.forEach(c => { c.muted = false; c.col.style.opacity = ''; applyGain(c); });
@@ -577,6 +577,7 @@ function makeChannelEl(parent, station, initGain) {
       });
       ch.soloed = true;
       ch.muted = false;
+      ch.frozen = true;  // freeze fader — no automation until manually touched
       ch.baseGain = 1.0; ch.dispGain = 1.0;
       ch.col.style.opacity = '';
       nameEl.style.color = 'var(--accent)';
@@ -628,6 +629,7 @@ function attachFaderEvents(ch, track, handle, onChangeFn) {
   };
   const onEnd = () => {
     if (ch.dragging && ch.autoTarget !== undefined) ch.autoTarget = ch.baseGain;
+    if (ch.dragging) ch.frozen = false;  // unfreeze on manual touch
     ch.dragging = false;
   };
   const onTap = y => {
@@ -635,6 +637,7 @@ function attachFaderEvents(ch, track, handle, onChangeFn) {
     ch.baseGain = Math.max(0, Math.min(1, 1 - (y - rect.top) / TRACK_H));
     if (ch.autoTarget !== undefined) ch.autoTarget = ch.baseGain;
     ch.dispGain = ch.baseGain;
+    ch.frozen = false;  // unfreeze on manual touch
     updateFader(ch); applyGain(ch);
     if (onChangeFn) onChangeFn(ch.baseGain);
   };
@@ -741,6 +744,13 @@ function tick() {
     // low chaos = quick fade out, high chaos = slow fade = more overlap
     const fadeSpeed = 0.15 - chaos * 0.12;
     channels.forEach(ch => {
+      if (ch.frozen) {
+        // frozen: skip automation, just update VU
+        const v = ch.dispGain * (0.55 + Math.random() * 0.45);
+        ch.vuBar.style.height     = (v * TRACK_H * 0.88) + 'px';
+        ch.vuBar.style.background = ch.station.color + Math.round(v * 200).toString(16).padStart(2,'0');
+        return;
+      }
       if (ch.cutTarget !== undefined) {
         const diff = ch.cutTarget - ch.dispGain;
         // ramp up fast (~3-4 frames), fade out slower
@@ -762,6 +772,14 @@ function tick() {
   }
 
   channels.forEach(ch => {
+    // frozen channels: skip automation, just update VU
+    if (ch.frozen) {
+      applyGain(ch);
+      const v = ch.dispGain * (0.55 + Math.random() * 0.45);
+      ch.vuBar.style.height     = (v * TRACK_H * 0.88) + 'px';
+      ch.vuBar.style.background = ch.station.color + Math.round(v * 200).toString(16).padStart(2,'0');
+      return;
+    }
     // auto mode: move baseGain toward autoTarget (skip if user is dragging)
     if (autoMode && !ch.dragging) {
       // intensity peaks at chaos 0.5, then plateaus
