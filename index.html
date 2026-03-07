@@ -140,7 +140,7 @@ h1 {
   border-radius: 2px;
   left: 50%;
   transform: translateX(-50%);
-  cursor: grab;
+  cursor: pointer;
   transition: background 0.1s, border-color 0.4s;
 }
 
@@ -558,7 +558,6 @@ function makeChannelEl(parent, station, initGain) {
     gainNode:   null,
     audio:      null,
   };
-  attachFaderEvents(ch, track, handle);
   updateFader(ch);
 
   // tap anywhere on channel to solo (only on quick taps, not drags)
@@ -583,9 +582,8 @@ function makeChannelEl(parent, station, initGain) {
       channels.forEach(c => { applyGain(c); updateFader(c); });
     }
   }
-  nameEl.addEventListener('click', e => { e.stopPropagation(); toggleSolo(); });
-  // tap VU meter to solo too (bigger target on mobile)
-  col.querySelector('.vu').addEventListener('click', e => { e.stopPropagation(); toggleSolo(); });
+  // tap anywhere on the channel to solo
+  col.addEventListener('click', e => { e.stopPropagation(); toggleSolo(); });
 
   return ch;
 }
@@ -631,7 +629,6 @@ function attachFaderEvents(ch, track, handle, onChangeFn) {
   };
   const onEnd = () => {
     if (ch.dragging && ch.autoTarget !== undefined) ch.autoTarget = ch.baseGain;
-    if (ch.dragging) ch.frozen = false;  // unfreeze on manual touch
     ch.dragging = false;
   };
   const onTap = y => {
@@ -639,7 +636,6 @@ function attachFaderEvents(ch, track, handle, onChangeFn) {
     ch.baseGain = Math.max(0, Math.min(1, 1 - (y - rect.top) / TRACK_H));
     if (ch.autoTarget !== undefined) ch.autoTarget = ch.baseGain;
     ch.dispGain = ch.baseGain;
-    ch.frozen = false;  // unfreeze on manual touch
     updateFader(ch); applyGain(ch);
     if (onChangeFn) onChangeFn(ch.baseGain);
   };
