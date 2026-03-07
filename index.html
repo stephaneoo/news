@@ -719,8 +719,8 @@ function tick() {
   if (cutupMode) {
     cutupFrames++;
     if (cutupFrames >= cutupInterval()) { cutupFrames = 0; cutupStep(); }
-    // faster chaos = tighter crossfade, slower = longer fade
-    const fadeSpeed = 0.05 + chaos * 0.2;
+    // low chaos = quick fade out, high chaos = slow fade = more overlap
+    const fadeSpeed = 0.15 - chaos * 0.12;
     channels.forEach(ch => {
       if (ch.cutTarget !== undefined) {
         const diff = ch.cutTarget - ch.dispGain;
