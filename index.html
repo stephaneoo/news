@@ -299,32 +299,6 @@ h1 {
 
 #btn-rnd.spinning { animation: spin 0.45s ease-out forwards; }
 
-/* ── Countries ── */
-#countries {
-  margin-top: 20px;
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 6px;
-  max-width: 520px;
-}
-
-.country-btn {
-  background: none;
-  border: 1px solid var(--border-dim);
-  color: var(--text-dim);
-  font-family: 'Courier New', monospace;
-  font-size: 10px;
-  letter-spacing: 1px;
-  padding: 4px 7px;
-  cursor: pointer;
-  outline: none;
-  transition: all 0.2s;
-}
-
-.country-btn:hover { border-color: var(--border); color: var(--text-mid); }
-.country-btn.on { border-color: var(--accent); color: var(--accent); }
-
 /* ── Status ── */
 #status {
   position: fixed;
@@ -409,9 +383,6 @@ h1 {
   #btn-play { font-size: 24px; min-width: 56px; padding: 10px 22px; }
   #btn-mode { font-size: 11px; }
 
-  #countries { margin-top: 14px; max-width: 95vw; gap: 5px; }
-  .country-btn { font-size: 9px; padding: 5px 8px; }
-
   #status { bottom: 10px; font-size: 9px; }
   #btn-day { bottom: 8px; right: 10px; }
 }
@@ -438,7 +409,6 @@ h1 {
   <button class="btn" id="btn-rnd" title="randomize stations">🎲</button>
   <button class="btn" id="btn-mode">[ cut ]</button>
 </div>
-<div id="countries"></div>
 <button class="btn" id="btn-day">[ night ]</button>
 <div id="status">click anywhere to start</div>
 
@@ -450,58 +420,27 @@ const COLORS = ["#4488ff","#ff5544","#aa55ff","#44aaff","#ffcc44","#ff8844",
                  "#44ffaa","#ff6688","#66ccff","#ff4488","#aaddff","#ffaa55",
                  "#55ffbb","#88ddff","#dd88ff","#ffdd44"];
 
-const COUNTRIES = [
-  { code: 'US', label: 'US' },
-  { code: 'GB', label: 'GB' },
-  { code: 'FR', label: 'FR' },
-  { code: 'DE', label: 'DE' },
-  { code: 'ES', label: 'ES' },
-  { code: 'AR', label: 'AR' },
-  { code: 'JP', label: 'JP' },
-  { code: 'KR', label: 'KR' },
-  { code: 'IN', label: 'IN' },
-  { code: 'RU', label: 'RU' },
-  { code: 'UA', label: 'UA' },
-];
-
-const activeCountries = new Set(COUNTRIES.map(c => c.code));
-
-function buildCountryPicker() {
-  const container = document.getElementById('countries');
-  COUNTRIES.forEach(c => {
-    const btn = document.createElement('button');
-    btn.className = 'country-btn on';
-    btn.textContent = c.label;
-    btn.addEventListener('click', () => {
-      if (activeCountries.has(c.code)) {
-        if (activeCountries.size <= 1) return; // keep at least one
-        activeCountries.delete(c.code);
-        btn.classList.remove('on');
-      } else {
-        activeCountries.add(c.code);
-        btn.classList.add('on');
-      }
-      refetchAndReload();
-    });
-    container.appendChild(btn);
-  });
-}
-
-async function refetchAndReload() {
-  const ok = await fetchStations();
-  if (!ok) return;
-  randomizeStations();
-}
-
 async function fetchStations() {
   const statusEl = document.getElementById('status');
   statusEl.textContent = 'fetching stations…';
   try {
-    const codes = [...activeCountries];
-    const fetches = codes.map(cc =>
+    const queries = [
+      { tag: 'news',        language: 'english', countrycode: 'US' },
+      { tag: 'news',        countrycode: 'GB' },
+      { tag: 'news',        countrycode: 'AU' },
+      { tag: 'news',        language: 'french' },
+      { tag: 'news',        language: 'spanish' },
+      { tag: 'news',        language: 'german' },
+      { tag: 'news',        language: 'arabic' },
+      { tag: 'news',        language: 'japanese' },
+      { tag: 'news',        language: 'korean' },
+      { tag: 'news',        language: 'hindi' },
+      { tag: 'news',        language: 'portuguese' },
+      { tag: 'news',        language: 'russian' },
+    ];
+    const fetches = queries.map(q =>
       fetch('https://de1.api.radio-browser.info/json/stations/search?' + new URLSearchParams({
-        countrycode: cc, tag: 'news',
-        limit: '15', order: 'votes', reverse: 'true', hidebroken: 'true',
+        ...q, limit: '10', order: 'votes', reverse: 'true', hidebroken: 'true',
       })).then(r => r.json()).catch(() => [])
     );
     const results = await Promise.all(fetches);
@@ -942,7 +881,6 @@ document.addEventListener('keydown', autostart, { once: true });
   document.body.classList.add('day');
   btnDay.textContent = '[ night ]';
   btnDay.classList.add('active');
-  buildCountryPicker();
 
   const ok = await fetchStations();
   if (!ok) return; // status already shows error
