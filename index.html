@@ -162,6 +162,7 @@ h1 {
   display: flex;
   align-items: center;
   justify-content: center;
+  cursor: pointer;
   transition: color 0.4s;
 }
 
@@ -558,6 +559,24 @@ function makeChannelEl(parent, station, initGain) {
   };
   attachFaderEvents(ch, track, handle);
   updateFader(ch);
+
+  // tap name to solo
+  nameEl.addEventListener('click', e => {
+    e.stopPropagation();
+    if (ch.soloed) {
+      // unsolo: restore all channels
+      ch.soloed = false;
+      nameEl.style.color = '';
+      channels.forEach(c => { c.muted = false; });
+    } else {
+      // solo this channel
+      channels.forEach(c => { c.soloed = false; c.muted = true; if (c.nameEl) c.nameEl.style.color = ''; });
+      ch.soloed = true;
+      ch.muted = false;
+      nameEl.style.color = 'var(--accent)';
+    }
+  });
+
   return ch;
 }
 
@@ -676,7 +695,7 @@ function cutupStep() {
 // ── Audio ─────────────────────────────────────────────────────────────────────
 function applyGain(ch) {
   if (!ch.audio) return;
-  const vol = Math.max(0, Math.min(1, ch.dispGain * masterVol));
+  const vol = ch.muted ? 0 : Math.max(0, Math.min(1, ch.dispGain * masterVol));
   ch.audio.volume = vol;
   ch.audio.muted = vol === 0;
 }
