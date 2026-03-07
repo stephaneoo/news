@@ -265,7 +265,7 @@ h1 {
 /* Night toggle — discreet corner */
 #btn-day {
   position: fixed;
-  bottom: 36px;
+  bottom: 70px;
   left: 50%;
   transform: translateX(-50%);
   font-size: 38px;
@@ -799,12 +799,12 @@ let mode = 'smooth';
 function applyModeUI() {
   btnMode.classList.add('active');
   if (mode === 'cut') {
-    btnMode.textContent = '[ cut ]';
+    btnMode.textContent = '→ smooth';
     depthWrap.style.visibility = 'hidden';
     speedWrap.style.visibility = 'visible';
     cutupMode = true; autoMode = false;
   } else {
-    btnMode.textContent = '[ smooth ]';
+    btnMode.textContent = '→ cut';
     depthWrap.style.visibility = 'visible';
     speedWrap.style.visibility = 'visible';
     cutupMode = false; autoMode = true;
