@@ -643,10 +643,14 @@ function enterCutup() {
     ch.station = shuffled[i];
     ch.nameEl.innerHTML = shuffled[i].name.replace('\n', '<br>');
     ch.fill.style.background = shuffled[i].color + '33';
-    if (ch.audio) { ch.audio.src = shuffled[i].url; ch.audio.play().catch(() => {}); }
     const g = i === 0 ? 1.0 : 0.0;
     ch.baseGain = g; ch.dispGain = g;
-    applyGain(ch);
+    if (ch.audio) {
+      ch.audio.src = shuffled[i].url;
+      ch.audio.muted = g === 0;
+      ch.audio.volume = g * masterVol;
+      ch.audio.play().catch(() => {});
+    }
     updateFader(ch);
   });
   cutupIndex = 0; cutupFrames = 0;
@@ -666,7 +670,10 @@ function cutupStep() {
 
 // ── Audio ─────────────────────────────────────────────────────────────────────
 function applyGain(ch) {
-  if (ch.audio) ch.audio.volume = Math.max(0, Math.min(1, ch.dispGain * masterVol));
+  if (!ch.audio) return;
+  const vol = Math.max(0, Math.min(1, ch.dispGain * masterVol));
+  ch.audio.volume = vol;
+  ch.audio.muted = vol === 0;
 }
 
 async function startAudio() {
