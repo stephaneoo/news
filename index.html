@@ -580,7 +580,7 @@ function makeChannelEl(parent, station, initGain) {
       channels.forEach(c => { c.muted = false; c.col.style.opacity = ''; applyGain(c); });
     } else {
       channels.forEach(c => {
-        c.soloed = false; c.muted = true;
+        c.soloed = false; c.frozen = false; c.muted = true;
         if (c.nameEl) c.nameEl.style.color = '';
         c.col.style.opacity = '0.3';
       });
