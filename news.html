@@ -1,0 +1,987 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Breaking Breaking News</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'><rect width='128' height='128' rx='24' fill='%23111118'/><circle cx='64' cy='68' r='8' fill='%237799ff'/><path d='M44 68a20 20 0 0 1 40 0' fill='none' stroke='%237799ff' stroke-width='4' stroke-linecap='round'/><path d='M32 68a32 32 0 0 1 64 0' fill='none' stroke='%237799ff' stroke-width='4' stroke-linecap='round' opacity='.6'/><path d='M20 68a44 44 0 0 1 88 0' fill='none' stroke='%237799ff' stroke-width='4' stroke-linecap='round' opacity='.3'/><text x='64' y='108' text-anchor='middle' fill='%23999' font-family='Courier New' font-size='14' letter-spacing='2'>BBN</text></svg>">
+<link rel="apple-touch-icon" href="icon-180.png">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg:         #111118;
+  --bg2:        #1c1c28;
+  --bg3:        #282838;
+  --text:       #ddd;
+  --text-dim:   #999;
+  --text-mid:   #bbb;
+  --border:     #555570;
+  --border-dim: #444458;
+  --handle:     #3a3a50;
+  --handle-b:   #666680;
+  --knob-grad:  radial-gradient(circle at 40% 35%, #353548, #222230);
+  --dot:        #bbb;
+  --accent:     #7799ff;
+}
+
+body.day {
+  --bg:         #f2ede6;
+  --bg2:        #e8e2da;
+  --bg3:        #ddd7ce;
+  --text:       #444;
+  --text-dim:   #777;
+  --text-mid:   #666;
+  --border:     #b8b0a6;
+  --border-dim: #d0c8be;
+  --handle:     #d8d0c6;
+  --handle-b:   #a8a098;
+  --knob-grad:  radial-gradient(circle at 40% 35%, #e0d8ce, #c8c0b6);
+  --dot:        #777;
+  --accent:     #3355cc;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Courier New', monospace;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  user-select: none;
+  transition: background 0.4s, color 0.4s;
+}
+
+h1 {
+  font-size: 14px;
+  letter-spacing: 8px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  margin-bottom: 44px;
+  transition: color 0.4s;
+}
+
+/* ── Mixer ── */
+#mixer {
+  display: flex;
+  gap: 14px;
+  align-items: flex-end;
+  touch-action: none;
+}
+
+#mixer .sep {
+  width: 1px;
+  height: 220px;
+  background: var(--border-dim);
+  margin: 0 6px;
+  align-self: center;
+}
+
+.channel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  width: 64px;
+  cursor: pointer;
+}
+.channel:not(.master) .channel-strip,
+.channel:not(.master) .channel-strip * {
+  pointer-events: none;
+}
+
+.channel.master { width: 72px; }
+
+.channel-strip {
+  display: flex;
+  gap: 5px;
+  align-items: flex-end;
+}
+
+.vu {
+  width: 3px;
+  height: 220px;
+  background: var(--bg2);
+  border-radius: 2px;
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.vu-bar {
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  border-radius: 2px;
+}
+
+.fader-track {
+  width: 4px;
+  height: 220px;
+  background: var(--bg3);
+  border-radius: 2px;
+  position: relative;
+  cursor: pointer;
+  transition: background 0.4s;
+}
+
+.master .fader-track { width: 6px; }
+
+.fader-fill {
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  border-radius: 2px;
+  pointer-events: none;
+}
+
+.fader-handle {
+  position: absolute;
+  width: 36px;
+  height: 13px;
+  background: var(--handle);
+  border: 1px solid var(--handle-b);
+  border-radius: 2px;
+  left: 50%;
+  transform: translateX(-50%);
+  cursor: pointer;
+  transition: background 0.1s, border-color 0.4s;
+}
+
+.master .fader-handle { width: 46px; }
+.fader-handle:hover   { filter: brightness(1.2); }
+.fader-handle:active  { cursor: grabbing; }
+
+.channel-name {
+  font-size: 8px;
+  letter-spacing: 0;
+  color: var(--text-mid);
+  text-align: center;
+  text-transform: uppercase;
+  line-height: 1.2;
+  margin-top: 6px;
+  height: 28px;
+  width: 100%;
+  overflow: hidden;
+  word-break: break-word;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: color 0.4s;
+}
+
+/* ── Layout ── */
+#main {
+  display: flex;
+  align-items: center;
+  gap: 32px;
+}
+
+#left-panel, #right-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-evenly;
+  height: 260px;
+  gap: 0;
+}
+
+#bottom {
+  margin-top: 28px;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+/* ── Knobs ── */
+.knob-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 7px;
+}
+
+.knob-label {
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  transition: color 0.4s;
+}
+
+.knob {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--knob-grad);
+  border: 1px solid var(--border-dim);
+  position: relative;
+  cursor: ns-resize;
+  transition: border-color 0.4s;
+  touch-action: none;
+}
+
+.knob-dot {
+  width: 2px;
+  height: 9px;
+  background: var(--dot);
+  border-radius: 2px;
+  position: absolute;
+  left: 50%;
+  top: 4px;
+  transform-origin: 50% 14px;
+  transition: background 0.4s;
+}
+
+/* ── Buttons ── */
+.btn {
+  background: none;
+  border: 1px solid var(--border-dim);
+  color: var(--text-dim);
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  padding: 10px 18px;
+  cursor: pointer;
+  outline: none;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.btn:hover { border-color: var(--border); color: var(--text-mid); }
+.btn.active { border-color: var(--accent); color: var(--accent); }
+.btn.live   { border-color: var(--accent); color: var(--accent); animation: blink 3s infinite; }
+
+#btn-play {
+  font-size: 28px;
+  padding: 6px 20px;
+  letter-spacing: 0;
+  line-height: 1;
+  min-width: 68px;
+  color: #44bb66;
+  border-color: #44bb6644;
+}
+#btn-play.live   { color: #ff5555; border-color: #ff555544; animation: blink 3s infinite; }
+#btn-play.active { color: #44bb66; border-color: #44bb6644; animation: none; }
+
+#btn-auto {
+  font-size: 10px;
+  padding: 8px 14px;
+  letter-spacing: 3px;
+}
+
+/* ── Mode toggle ── */
+#btn-mode { letter-spacing: 1px; font-size: 11px; }
+#mode-drift, #mode-zap { transition: color 0.2s, opacity 0.2s; }
+.mode-on { color: var(--accent); opacity: 1; }
+.mode-off { opacity: 0.35; }
+
+/* Night toggle — discreet corner */
+#btn-day {
+  position: fixed;
+  bottom: 16px;
+  right: 20px;
+  font-size: 24px;
+  padding: 4px 8px;
+  letter-spacing: 0;
+  border: none;
+  opacity: 0.4;
+  transition: opacity 0.3s;
+}
+#btn-day:hover { opacity: 0.8; }
+
+@keyframes blink {
+  0%, 100% { opacity: 0.6; }
+  50%       { opacity: 1.0; }
+}
+
+@keyframes spin {
+  0%   { transform: rotate(0deg)   scale(1);   }
+  40%  { transform: rotate(280deg) scale(1.3); }
+  100% { transform: rotate(360deg) scale(1);   }
+}
+
+#btn-rnd {
+  font-size: 52px;
+  padding: 0 8px;
+  letter-spacing: 0;
+  line-height: 1;
+  border: none;
+  background: none;
+  filter: grayscale(1) brightness(0.7);
+  opacity: 0.5;
+  transition: opacity 0.2s, filter 0.2s;
+}
+#btn-rnd:hover { opacity: 0.9; filter: grayscale(0.5) brightness(0.9); }
+
+#btn-rnd.spinning { animation: spin 0.45s ease-out forwards; }
+
+/* ── Status ── */
+#status {
+  position: fixed;
+  bottom: 18px;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  transition: color 0.4s;
+}
+
+/* ── Mobile ── */
+@media (max-width: 600px) {
+  body {
+    justify-content: flex-start;
+    padding-top: 20px;
+    padding-bottom: 50px;
+    overflow-y: auto;
+  }
+
+  h1 {
+    font-size: 11px;
+    letter-spacing: 5px;
+    margin-bottom: 16px;
+  }
+
+  #main {
+    flex-direction: column;
+    gap: 16px;
+    width: 100%;
+    padding: 0 8px;
+  }
+
+  #mixer {
+    gap: 0;
+    justify-content: center;
+    width: 100%;
+  }
+
+  .channel {
+    width: calc((100vw - 60px) / 9);
+    min-width: 28px;
+    max-width: 40px;
+  }
+  .channel.master {
+    width: calc((100vw - 60px) / 9 + 8px);
+    min-width: 34px;
+    max-width: 48px;
+  }
+
+  .vu, .fader-track { height: 140px; }
+  #mixer .sep { height: 140px; margin: 0 3px; }
+
+  .fader-handle { width: 26px; height: 12px; }
+  .master .fader-handle { width: 34px; }
+
+  .channel-name {
+    font-size: 6px;
+    height: 22px;
+    letter-spacing: 0;
+    word-break: break-all;
+    overflow: hidden;
+  }
+
+  #right-panel {
+    flex-direction: row;
+    height: 60px;
+    gap: 32px;
+  }
+
+  #bottom {
+    margin-top: 16px;
+    gap: 18px;
+  }
+
+  .knob { width: 48px; height: 48px; }
+  .knob-dot { transform-origin: 50% 20px; top: 5px; height: 10px; }
+  .knob-label { font-size: 9px; }
+
+  .btn { padding: 12px 20px; }
+  #btn-rnd { font-size: 40px; }
+  #btn-play { font-size: 24px; min-width: 56px; padding: 10px 22px; }
+  #btn-mode { font-size: 11px; }
+
+  #status { bottom: 10px; font-size: 9px; }
+  #btn-day { bottom: 8px; right: 10px; }
+}
+</style>
+</head>
+<body>
+
+<h1>Breaking Breaking News</h1>
+<div id="main">
+  <div id="mixer"></div>
+  <div id="right-panel">
+    <div class="knob-wrap" id="speed-wrap">
+      <div class="knob-label">Chaos</div>
+      <div class="knob" id="knob-chaos"><div class="knob-dot"></div></div>
+    </div>
+  </div>
+</div>
+<div id="bottom">
+  <button class="btn" id="btn-play">▶</button>
+  <button class="btn" id="btn-rnd" title="randomize stations">🎲</button>
+  <button class="btn" id="btn-mode"><span id="mode-drift">drift</span> · <span id="mode-zap">zap</span></button>
+</div>
+<button class="btn" id="btn-day">☽</button>
+<div id="status">click anywhere to start</div>
+
+<script>
+// ── Station pool — populated dynamically from radio-browser.info ──────────────
+let currentPool = [];
+
+const COLORS = ["#4488ff","#ff5544","#aa55ff","#44aaff","#ffcc44","#ff8844",
+                 "#44ffaa","#ff6688","#66ccff","#ff4488","#aaddff","#ffaa55",
+                 "#55ffbb","#88ddff","#dd88ff","#ffdd44"];
+
+async function fetchStations() {
+  const statusEl = document.getElementById('status');
+  statusEl.textContent = 'fetching stations…';
+  try {
+    const queries = [
+      { tag: 'news', countrycode: 'US' },
+      { tag: 'news', countrycode: 'GB' },
+    ];
+    const fetches = queries.map(q =>
+      fetch('https://de1.api.radio-browser.info/json/stations/search?' + new URLSearchParams({
+        ...q, limit: '30', order: 'votes', reverse: 'true', hidebroken: 'true',
+      })).then(r => r.json()).catch(() => [])
+    );
+    const results = await Promise.all(fetches);
+    const seenUrl = new Set();
+    const seenName = new Set();
+    const musicWords = /music|rock|pop|jazz|classic|hip.?hop|country|soul|reggae|metal|blues|hits|oldies|dance|edm|techno|folk|rnb|r&b|latino|schlager/i;
+    const stations = results.flat()
+      .filter(s => {
+        if (!s.url_resolved) return false;
+        if (s.url_resolved.includes('.m3u8') || s.url_resolved.includes('.pls')) return false;
+        if (musicWords.test(s.tags || '') || musicWords.test(s.name || '')) return false;
+        const url = s.url_resolved;
+        const name = s.name.trim().toLowerCase();
+        if (seenUrl.has(url) || seenName.has(name)) return false;
+        seenUrl.add(url);
+        seenName.add(name);
+        return true;
+      })
+      .slice(0, 48)
+      .map((s, i) => ({
+        name: s.name.trim().replace(/\s+/g, '\n').slice(0, 18),
+        url:  s.url_resolved,
+        color: COLORS[i % COLORS.length],
+      }));
+    if (stations.length >= N) {
+      currentPool = stations;
+      statusEl.textContent = 'buffering…';
+      return true;
+    }
+  } catch(e) {}
+  statusEl.textContent = 'fetch failed — check connection';
+  return false;
+}
+
+// Fill to N stations, repeating pool if needed
+function poolSlice(pool) {
+  if (pool.length === 0) return [];
+  const shuffled = [...pool].sort(() => Math.random() - 0.5);
+  // never repeat a station — only use unique entries
+  const seen = new Set();
+  const out = [];
+  for (const s of shuffled) {
+    if (!seen.has(s.url)) { seen.add(s.url); out.push(s); }
+    if (out.length >= N) break;
+  }
+  return out;
+}
+
+const N = 8;
+const isMobile = window.matchMedia('(max-width: 600px)').matches;
+const TRACK_H = isMobile ? 140 : 220, HANDLE_H = isMobile ? 11 : 13;
+
+let chaos = 0.0, masterVol = 0.8;
+
+let started = false, playing = false, autoMode = true, dayMode = true, cutupMode = false;
+let cutupIndex = 0, cutupFrames = 0;
+
+function cutupInterval() {
+  return Math.max(2, Math.round(25 / (0.04 + chaos * 2.5)));
+}
+
+const channels = []; // 6 channel strips
+let masterCh;        // master fader object
+
+// ── Build UI ──────────────────────────────────────────────────────────────────
+function buildMixer() {
+  const mixer = document.getElementById('mixer');
+  const initial = poolSlice(currentPool);
+
+  initial.forEach((station, i) => {
+    const ch = makeChannelEl(mixer, station, i === 0 ? 0.6 : i === 1 ? 0.35 : 0);
+    channels.push(ch);
+  });
+
+  // separator
+  const sep = document.createElement('div');
+  sep.className = 'sep';
+  mixer.appendChild(sep);
+
+  // master fader
+  masterCh = makeMasterEl(mixer);
+}
+
+function makeChannelEl(parent, station, initGain) {
+  const col = document.createElement('div');
+  col.className = 'channel';
+  col.innerHTML = `
+    <div class="channel-strip">
+      <div class="vu"><div class="vu-bar"></div></div>
+      <div class="fader-track">
+        <div class="fader-fill"></div>
+        <div class="fader-handle"></div>
+      </div>
+    </div>
+    <div class="channel-name">${station.name.replace('\n','<br>')}</div>
+  `;
+  parent.appendChild(col);
+
+  const track    = col.querySelector('.fader-track');
+  const handle   = col.querySelector('.fader-handle');
+  const fill     = col.querySelector('.fader-fill');
+  const vuBar    = col.querySelector('.vu-bar');
+  const nameEl   = col.querySelector('.channel-name');
+
+  const ch = {
+    station, col, track, handle, fill, vuBar, nameEl,
+    baseGain:   initGain,
+    dispGain:   initGain,
+    lfoPhase:   Math.random() * Math.PI * 2,
+    lfoSpeed:   0.06 + Math.random() * 0.1,
+    lfoDepth:   0.6 + Math.random() * 1.0,
+    autoTarget: initGain > 0 ? (0.3 + Math.random() * 0.7) : 0,
+    autoSpeed:  0.005 + Math.random() * 0.008,
+    gainNode:   null,
+    audio:      null,
+  };
+  updateFader(ch);
+
+  // tap anywhere on channel to solo (only on quick taps, not drags)
+  function toggleSolo() {
+    if (ch.soloed) {
+      ch.soloed = false;
+      ch.frozen = false;
+      nameEl.style.color = '';
+      channels.forEach(c => { c.muted = false; c.col.style.opacity = ''; applyGain(c); });
+    } else {
+      channels.forEach(c => {
+        c.soloed = false; c.muted = true;
+        if (c.nameEl) c.nameEl.style.color = '';
+        c.col.style.opacity = '0.3';
+      });
+      ch.soloed = true;
+      ch.muted = false;
+      ch.frozen = true;
+      ch.baseGain = 1.0; ch.dispGain = 1.0;
+      ch.col.style.opacity = '';
+      nameEl.style.color = 'var(--accent)';
+      channels.forEach(c => { applyGain(c); updateFader(c); });
+    }
+  }
+  // tap anywhere on the channel to solo
+  col.addEventListener('click', e => { e.stopPropagation(); toggleSolo(); });
+
+  return ch;
+}
+
+function makeMasterEl(parent) {
+  const col = document.createElement('div');
+  col.className = 'channel master';
+  col.innerHTML = `
+    <div class="channel-strip">
+      <div class="fader-track">
+        <div class="fader-fill" style="background:#ffffff22"></div>
+        <div class="fader-handle"></div>
+      </div>
+    </div>
+    <div class="channel-name">Master</div>
+  `;
+  parent.appendChild(col);
+
+  const track  = col.querySelector('.fader-track');
+  const handle = col.querySelector('.fader-handle');
+  const fill   = col.querySelector('.fader-fill');
+
+  const ch = { track, handle, fill, baseGain: masterVol, dispGain: masterVol };
+  attachFaderEvents(ch, track, handle, v => {
+    masterVol = v;
+    channels.forEach(c => applyGain(c));
+  });
+  updateFader(ch);
+  return ch;
+}
+
+function attachFaderEvents(ch, track, handle, onChangeFn) {
+  let dragY0, dragG0;
+  ch.dragging = false;
+
+  const onStart = y => { ch.dragging = true; dragY0 = y; dragG0 = ch.baseGain; };
+  const onMove = y => {
+    if (!ch.dragging) return;
+    ch.baseGain = Math.max(0, Math.min(1, dragG0 + (dragY0 - y) / TRACK_H));
+    ch.dispGain = ch.baseGain;
+    updateFader(ch); applyGain(ch);
+    if (onChangeFn) onChangeFn(ch.baseGain);
+  };
+  const onEnd = () => {
+    if (ch.dragging && ch.autoTarget !== undefined) ch.autoTarget = ch.baseGain;
+    ch.dragging = false;
+  };
+  const onTap = y => {
+    const rect = track.getBoundingClientRect();
+    ch.baseGain = Math.max(0, Math.min(1, 1 - (y - rect.top) / TRACK_H));
+    if (ch.autoTarget !== undefined) ch.autoTarget = ch.baseGain;
+    ch.dispGain = ch.baseGain;
+    updateFader(ch); applyGain(ch);
+    if (onChangeFn) onChangeFn(ch.baseGain);
+  };
+
+  handle.addEventListener('mousedown', e => { onStart(e.clientY); e.preventDefault(); e.stopPropagation(); });
+  document.addEventListener('mousemove', e => onMove(e.clientY));
+  document.addEventListener('mouseup', onEnd);
+
+  track.addEventListener('click', e => { if (e.target !== handle) onTap(e.clientY); });
+
+  handle.addEventListener('touchstart', e => { onStart(e.touches[0].clientY); e.preventDefault(); e.stopPropagation(); }, { passive: false });
+  document.addEventListener('touchmove', e => { if (ch.dragging) { onMove(e.touches[0].clientY); e.preventDefault(); } }, { passive: false });
+  document.addEventListener('touchend', onEnd);
+
+  track.addEventListener('touchstart', e => { if (e.target !== handle) { onTap(e.touches[0].clientY); e.preventDefault(); } }, { passive: false });
+}
+
+function updateFader(ch) {
+  const g = ch.dispGain;
+  ch.fill.style.height   = (g * TRACK_H) + 'px';
+  ch.handle.style.bottom = (g * (TRACK_H - HANDLE_H)) + 'px';
+  ch.handle.style.top    = 'auto';
+  if (ch.station) ch.fill.style.background = ch.station.color + '33';
+}
+
+// ── Randomize ─────────────────────────────────────────────────────────────────
+function randomizeStations() {
+  const shuffled = poolSlice(currentPool);
+  channels.forEach((ch, i) => {
+    ch.station = shuffled[i];
+    ch.nameEl.innerHTML = shuffled[i].name.replace('\n', '<br>');
+    ch.fill.style.background = shuffled[i].color + '33';
+    if (ch.audio) {
+      ch.audio.src = shuffled[i].url;
+      if (playing) ch.audio.play().catch(() => {});
+    }
+  });
+}
+
+// ── Cut-up mode ───────────────────────────────────────────────────────────────
+function enterCutup() {
+  channels.forEach((ch, i) => {
+    const g = i === 0 ? 1.0 : 0.0;
+    ch.baseGain = g; ch.dispGain = g; ch.cutTarget = g;
+    applyGain(ch);
+    updateFader(ch);
+  });
+  cutupIndex = 0; cutupFrames = 0;
+}
+
+function cutupStep() {
+  let next;
+  do { next = Math.floor(Math.random() * N); } while (next === cutupIndex && N > 1);
+  // new channel jumps to full immediately, old ones fade out
+  channels.forEach((ch, i) => {
+    if (i === next) {
+      ch.cutTarget = 1.0;
+    } else {
+      ch.cutTarget = 0.0;
+    }
+  });
+  cutupIndex = next;
+}
+
+// ── Audio ─────────────────────────────────────────────────────────────────────
+function applyGain(ch) {
+  if (!ch.audio) return;
+  const raw = ch.muted ? 0 : Math.max(0, Math.min(1, ch.dispGain * masterVol));
+  // hard mute below threshold — low volumes are still audible on loud streams
+  const vol = raw < 0.03 ? 0 : raw;
+  ch.audio.volume = vol;
+  ch.audio.muted = vol === 0;
+}
+
+async function startAudio() {
+  const statusEl = document.getElementById('status');
+  let loaded = 0;
+
+  for (let i = 0; i < N; i++) {
+    const ch = channels[i];
+    const el = new Audio();
+    el.src = ch.station.url;
+    ch.audio = el;
+    el.volume = ch.baseGain * masterVol;
+
+    el.addEventListener('canplay', () => {
+      loaded++;
+      statusEl.textContent = loaded === N ? 'live' : `buffering ${loaded}/${N}`;
+    });
+    el.addEventListener('error', () => {
+      loaded++;
+      statusEl.textContent = loaded === N ? 'live' : `buffering ${loaded}/${N}`;
+    });
+    el.play().catch(() => {});
+  }
+}
+
+// ── Animation loop ────────────────────────────────────────────────────────────
+function tick() {
+  if (!playing) { requestAnimationFrame(tick); return; }
+
+  // cut-up mode: switch with short crossfade
+  if (cutupMode) {
+    cutupFrames++;
+    if (cutupFrames >= cutupInterval()) { cutupFrames = 0; cutupStep(); }
+    // low chaos = quick fade out, high chaos = slow fade = more overlap
+    const fadeSpeed = 0.15 - chaos * 0.12;
+    channels.forEach(ch => {
+      if (ch.frozen) {
+        // frozen: skip automation, just update VU
+        const v = ch.dispGain * (0.55 + Math.random() * 0.45);
+        ch.vuBar.style.height     = (v * TRACK_H * 0.88) + 'px';
+        ch.vuBar.style.background = ch.station.color + Math.round(v * 200).toString(16).padStart(2,'0');
+        return;
+      }
+      if (ch.cutTarget !== undefined) {
+        const diff = ch.cutTarget - ch.dispGain;
+        // ramp up fast (~3-4 frames), fade out slower
+        const speed = diff > 0 ? 0.3 : fadeSpeed;
+        if (Math.abs(diff) < speed) {
+          ch.dispGain = ch.cutTarget;
+        } else {
+          ch.dispGain += Math.sign(diff) * speed;
+        }
+        ch.baseGain = ch.dispGain;
+        applyGain(ch); updateFader(ch);
+      }
+      const v = ch.dispGain * (0.55 + Math.random() * 0.45);
+      ch.vuBar.style.height     = (v * TRACK_H * 0.88) + 'px';
+      ch.vuBar.style.background = ch.station.color + Math.round(v * 200).toString(16).padStart(2,'0');
+    });
+    requestAnimationFrame(tick);
+    return;
+  }
+
+  channels.forEach(ch => {
+    // frozen channels: skip automation, just update VU
+    if (ch.frozen) {
+      applyGain(ch);
+      const v = ch.dispGain * (0.55 + Math.random() * 0.45);
+      ch.vuBar.style.height     = (v * TRACK_H * 0.88) + 'px';
+      ch.vuBar.style.background = ch.station.color + Math.round(v * 200).toString(16).padStart(2,'0');
+      return;
+    }
+    // auto mode: move baseGain toward autoTarget (skip if user is dragging)
+    if (autoMode && !ch.dragging) {
+      // intensity peaks at chaos 0.5, then plateaus
+      const intensity = Math.min(chaos * 2, 1);
+      // floor rises from 0 → ~0.85 as chaos goes 0 → 1
+      const minLevel = chaos * 0.75;
+      const speed = ch.autoSpeed * (0.4 + intensity * 2.9);
+      const dir = Math.sign(ch.autoTarget - ch.baseGain);
+      ch.baseGain += dir * speed;
+      ch.baseGain = Math.max(minLevel, Math.min(1, ch.baseGain));
+      if (Math.abs(ch.baseGain - ch.autoTarget) < 0.01) {
+        // count how many channels are currently audible
+        const audible = channels.filter(c => c !== ch && c.baseGain > 0.05).length;
+        const maxAudible = Math.floor(2 + chaos * 5); // 2 at zero, 7 at max
+        if (audible < 1) {
+          // always keep at least one channel up
+          ch.autoTarget = 0.5 + Math.random() * 0.5;
+        } else if (audible >= maxAudible) {
+          // too many voices — silence this one
+          ch.autoTarget = 0;
+        } else {
+          // mix of going up or going silent
+          ch.autoTarget = Math.random() < 0.4 ? 0 : 0.3 + Math.random() * 0.7;
+        }
+      }
+    }
+
+    // drift: micro LFO — intensity controls wobble, but faders clamp to floor
+    if (autoMode) {
+      const intensity = Math.min(chaos * 2, 1);
+      const minLevel = chaos * 0.75;
+      ch.lfoPhase += ch.lfoSpeed * (0.12 + intensity * 1.98);
+      const mod = Math.sin(ch.lfoPhase) * ch.lfoDepth * (0.05 + intensity * 0.95) * ch.baseGain;
+      ch.dispGain = Math.max(minLevel, Math.min(1, ch.baseGain + mod));
+    } else {
+      ch.dispGain = ch.baseGain;
+    }
+
+    applyGain(ch);
+    updateFader(ch);
+
+    // VU
+    const v = ch.dispGain * (0.55 + Math.random() * 0.45);
+    ch.vuBar.style.height     = (v * TRACK_H * 0.88) + 'px';
+    ch.vuBar.style.background = ch.station.color + Math.round(v * 200).toString(16).padStart(2,'0');
+  });
+
+  requestAnimationFrame(tick);
+}
+
+// ── Knobs ─────────────────────────────────────────────────────────────────────
+function makeKnob(id, initVal, onChange) {
+  const el  = document.getElementById(id);
+  const dot = el.querySelector('.knob-dot');
+  let val = initVal, dragging = false, startY, startVal;
+
+  const render = v => {
+    dot.style.transform = `translateX(-50%) rotate(${-135 + v * 270}deg)`;
+  };
+  render(val);
+
+  const onStart = y => { dragging = true; startY = y; startVal = val; };
+  const onMove = y => {
+    if (!dragging) return;
+    val = Math.max(0, Math.min(1, startVal + (startY - y) / 120));
+    render(val); onChange(val);
+  };
+
+  el.addEventListener('mousedown', e => { onStart(e.clientY); e.preventDefault(); });
+  document.addEventListener('mousemove', e => onMove(e.clientY));
+  document.addEventListener('mouseup', () => { dragging = false; });
+
+  el.addEventListener('touchstart', e => { onStart(e.touches[0].clientY); e.preventDefault(); }, { passive: false });
+  document.addEventListener('touchmove', e => { if (dragging) { onMove(e.touches[0].clientY); e.preventDefault(); } }, { passive: false });
+  document.addEventListener('touchend', () => { dragging = false; });
+}
+
+makeKnob('knob-chaos', 0.0, v => { chaos = v; });
+
+// ── Buttons ───────────────────────────────────────────────────────────────────
+const btnPlay = document.getElementById('btn-play');
+const btnRnd  = document.getElementById('btn-rnd');
+const btnDay  = document.getElementById('btn-day');
+const btnMode = document.getElementById('btn-mode');
+const speedWrap = document.getElementById('speed-wrap');
+
+// modes: 'smooth', 'cut', 'manual'
+let mode = 'smooth';
+
+const modeSmooth = document.getElementById('mode-drift');
+const modeCut = document.getElementById('mode-zap');
+
+function applyModeUI() {
+  btnMode.classList.add('active');
+  if (mode === 'cut') {
+    modeSmooth.className = 'mode-off';
+    modeCut.className = 'mode-on';
+    speedWrap.style.visibility = 'visible';
+    cutupMode = true; autoMode = false;
+  } else {
+    modeSmooth.className = 'mode-on';
+    modeCut.className = 'mode-off';
+    speedWrap.style.visibility = 'visible';
+    cutupMode = false; autoMode = true;
+    channels.forEach(ch => {
+      ch.autoTarget = Math.max(0, Math.min(1, ch.baseGain + (Math.random() - 0.5) * 0.5));
+    });
+  }
+}
+
+btnPlay.addEventListener('click', async () => {
+  if (!started) {
+    await autostart();
+  } else if (playing) {
+    playing = false;
+    channels.forEach(ch => { if (ch.audio) ch.audio.pause(); });
+    btnPlay.textContent = '▶';
+    btnPlay.classList.remove('live');
+    btnPlay.classList.add('active');
+  } else {
+    playing = true;
+    channels.forEach(ch => { if (ch.audio) ch.audio.play().catch(() => {}); });
+    btnPlay.textContent = '■';
+    btnPlay.classList.add('live');
+    btnPlay.classList.remove('active');
+  }
+});
+
+btnRnd.addEventListener('click', () => {
+  btnRnd.classList.remove('spinning');
+  void btnRnd.offsetWidth;
+  btnRnd.classList.add('spinning');
+  btnRnd.textContent = DICE[Math.floor(Math.random() * 6)];
+  btnRnd.addEventListener('animationend', () => btnRnd.classList.remove('spinning'), { once: true });
+  randomizeStations();
+});
+
+btnMode.addEventListener('click', () => {
+  const modes = ['smooth', 'cut'];
+  mode = modes[(modes.indexOf(mode) + 1) % modes.length];
+  if (mode === 'cut') {
+    if (chaos < 0.4) chaos = 0.4;
+    if (started) enterCutup();
+  } else {
+    channels.forEach(ch => {
+      ch.baseGain = 0.5; ch.dispGain = 0.5;
+      applyGain(ch); updateFader(ch);
+    });
+  }
+  applyModeUI();
+});
+
+const DICE = ['⚀','⚁','⚂','⚃','⚄','⚅'];
+btnDay.addEventListener('click', () => {
+  dayMode = !dayMode;
+  document.body.classList.toggle('day', dayMode);
+  btnDay.textContent = dayMode ? '☽' : '☀';
+  btnDay.classList.toggle('active', dayMode);
+});
+
+// ── Autoplay on first interaction ─────────────────────────────────────────────
+async function autostart() {
+  if (started || channels.length === 0) return;
+  started = true; playing = true;
+  btnPlay.textContent = '■';
+  btnPlay.classList.add('live');
+  btnPlay.classList.remove('active');
+  document.getElementById('status').textContent = 'buffering…';
+  await startAudio();
+  if (cutupMode) enterCutup();
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+(async function init() {
+  document.body.classList.add('day');
+  btnDay.textContent = '☽';
+  btnDay.classList.add('active');
+
+  const ok = await fetchStations();
+  if (!ok) return; // status already shows error
+
+  buildMixer();
+  applyModeUI();
+  // smooth mode: spread faders, give each a random auto target
+  channels.forEach((ch, i) => {
+    const g = [0.7, 0.0, 0.5, 0.0, 0.0, 0.3, 0.0, 0.0][i] ?? 0;
+    ch.baseGain = g; ch.dispGain = g;
+    // channels starting silent should stay silent initially
+    ch.autoTarget = g > 0 ? (0.3 + Math.random() * 0.7) : 0;
+    updateFader(ch);
+  });
+  requestAnimationFrame(tick);
+})();
+</script>
+</body>
+</html>
