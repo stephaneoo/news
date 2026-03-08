@@ -53,6 +53,7 @@ body {
   align-items: center;
   justify-content: center;
   overflow: hidden;
+  overscroll-behavior: none;
   user-select: none;
   transition: background 0.4s, color 0.4s;
 }
@@ -340,7 +341,9 @@ h1 {
     justify-content: flex-start;
     padding-top: 20px;
     padding-bottom: 50px;
-    overflow-y: auto;
+    overflow: hidden;
+    overscroll-behavior: none;
+    touch-action: none;
   }
 
   h1 {
@@ -419,7 +422,7 @@ h1 {
   <div id="mixer"></div>
   <div id="right-panel">
     <div class="knob-wrap" id="speed-wrap">
-      <div class="knob-label" id="speed-label">Chatter</div>
+      <div class="knob-label" id="speed-label">Speed</div>
       <div class="knob" id="knob-speed"><div class="knob-dot"></div></div>
     </div>
   </div>
@@ -878,13 +881,13 @@ function applyModeUI() {
     modeSmooth.className = 'mode-off';
     modeCut.className = 'mode-on';
     speedWrap.style.visibility = 'visible';
-    speedLabel.textContent = 'Twitch';
+    speedLabel.textContent = 'Speed';
     cutupMode = true; autoMode = false;
   } else {
     modeSmooth.className = 'mode-on';
     modeCut.className = 'mode-off';
     speedWrap.style.visibility = 'visible';
-    speedLabel.textContent = 'Chatter';
+    speedLabel.textContent = 'Speed';
     cutupMode = false; autoMode = true;
     channels.forEach(ch => {
       ch.autoTarget = Math.max(0, Math.min(1, ch.baseGain + (Math.random() - 0.5) * 0.5));
