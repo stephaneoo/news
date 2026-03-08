@@ -710,12 +710,20 @@ function cutupStep() {
 }
 
 // ── Audio ─────────────────────────────────────────────────────────────────────
+let audioCtx = null;
+
 function applyGain(ch) {
   if (!ch.audio) return;
   const raw = ch.muted ? 0 : Math.max(0, Math.min(1, ch.dispGain * masterVol));
   // hard mute below threshold — low volumes are still audible on loud streams
   const vol = raw < 0.03 ? 0 : raw;
-  ch.audio.volume = vol;
+  if (ch.gainNode) {
+    // Web Audio API gain — works on iOS
+    ch.gainNode.gain.value = vol;
+  } else {
+    // fallback
+    ch.audio.volume = vol;
+  }
   ch.audio.muted = vol === 0;
 }
 
@@ -723,12 +731,33 @@ async function startAudio() {
   const statusEl = document.getElementById('status');
   let loaded = 0;
 
+  // create AudioContext on user gesture (required for iOS)
+  try {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') await audioCtx.resume();
+  } catch(e) { audioCtx = null; }
+
   for (let i = 0; i < N; i++) {
     const ch = channels[i];
     const el = new Audio();
     el.src = ch.station.url;
     ch.audio = el;
-    el.volume = ch.baseGain * masterVol;
+
+    // route through Web Audio GainNode for iOS volume control
+    if (audioCtx) {
+      try {
+        const source = audioCtx.createMediaElementSource(el);
+        const gain = audioCtx.createGain();
+        gain.gain.value = ch.baseGain * masterVol;
+        source.connect(gain);
+        gain.connect(audioCtx.destination);
+        ch.gainNode = gain;
+      } catch(e) {
+        el.volume = ch.baseGain * masterVol;
+      }
+    } else {
+      el.volume = ch.baseGain * masterVol;
+    }
 
     el.addEventListener('canplay', () => {
       loaded++;
