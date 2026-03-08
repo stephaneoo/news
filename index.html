@@ -789,7 +789,7 @@ function tick() {
       const intensity = Math.min(chaos * 2, 1);
       // floor rises from 0 → ~0.85 as chaos goes 0 → 1
       const minLevel = chaos * 0.75;
-      const speed = ch.autoSpeed * (0.3 + intensity * 3);
+      const speed = ch.autoSpeed * (0.6 + intensity * 2.7);
       const dir = Math.sign(ch.autoTarget - ch.baseGain);
       ch.baseGain += dir * speed;
       ch.baseGain = Math.max(minLevel, Math.min(1, ch.baseGain));
@@ -806,8 +806,8 @@ function tick() {
     if (autoMode) {
       const intensity = Math.min(chaos * 2, 1);
       const minLevel = chaos * 0.75;
-      ch.lfoPhase += ch.lfoSpeed * (0.1 + intensity * 2);
-      const mod = Math.sin(ch.lfoPhase) * ch.lfoDepth * intensity * ch.baseGain;
+      ch.lfoPhase += ch.lfoSpeed * (0.2 + intensity * 1.9);
+      const mod = Math.sin(ch.lfoPhase) * ch.lfoDepth * (0.15 + intensity * 0.85) * ch.baseGain;
       ch.dispGain = Math.max(minLevel, Math.min(1, ch.baseGain + mod));
     } else {
       ch.dispGain = ch.baseGain;
